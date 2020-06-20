@@ -23,7 +23,7 @@ namespace Dice {
 
 
 function getDiceImageUrl(diceNumber: Dice ){
-  return `//garronej.github.io/js-dice-game/dice-${diceNumber}.png`;
+  return `//thieryw.github.io/oop-js-dice-game/docs/dice-${diceNumber}.png`;
 }
 
 
@@ -125,7 +125,7 @@ class Game {
         `${this.player1.getGlobalScore()}` : `${this.player2.getGlobalScore()}`;
     }
         
-    this.wrapper.querySelector(".dice").setAttribute("src", `docs/dice-${dice}.png`);
+    this.wrapper.querySelector(".dice").setAttribute("src", `${getDiceImageUrl(dice)}`);
 
 
 
