@@ -251,7 +251,7 @@ class Game {
 
 }
 
-document.addEventListener("DOMContentLoaded", ()=>{
+
 
     const game = new Game(document.querySelector(".wrapper"));
 
@@ -260,4 +260,3 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 
 
-}, false);
