@@ -103,13 +103,17 @@ class Game {
   }
 
   private getWinner() : 1 | 2 | undefined{
+      
       if(this.player1.getGlobalScore() >= Game.scoreToWin){
           return 1;
-      }else if(this.player2.getGlobalScore() >= Game.scoreToWin){
+      } 
+      
+      if(this.player2.getGlobalScore() >= Game.scoreToWin){
           return 2;
-      }else{
-          return undefined;
       }
+    
+      return undefined;
+      
   }
 
 
