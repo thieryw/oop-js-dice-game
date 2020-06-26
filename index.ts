@@ -1,5 +1,5 @@
 // Import stylesheets
-import './style.css';
+import "./style.css";
 /*
 GAME RULES:
 
@@ -11,256 +11,227 @@ GAME RULES:
 
 */
 
-type Dice= 1 | 2 | 3 | 4 | 5 | 6;
+type Dice = 1 | 2 | 3 | 4 | 5 | 6;
 
-namespace Dice {
+namespace Dice {
+  export function generateRandom(): Dice {
+    return (~~(Math.random() * 5) + 1) as any;
+  }
 
-  export function generateRandom(): Dice{
-    return ~~(Math.random()*5) + 1 as any;
-  }
-
+  export function getImageUrl(diceNumber: Dice) {
+    return `//thieryw.github.io/oop-js-dice-game/docs/dice-${diceNumber}.png`;
+  }
 }
 
+class Player {
+  private static playerCount = 0;
 
-function getDiceImageUrl(diceNumber: Dice ){
-  return `//thieryw.github.io/oop-js-dice-game/docs/dice-${diceNumber}.png`;
-}
+  private currentScore = 0;
+  private globalScore = 0;
 
+  public getCurrentScore() {
+    return this.currentScore;
+  }
 
-class Player {
+  public getGlobalScore() {
+    return this.globalScore;
+  }
 
-  private static playerCount = 0
+  constructor(public readonly name = `Player ${++Player.playerCount}`) {}
 
-  private currentScore= 0;
-  private globalScore= 0;
+  public resetScores() {
+    this.currentScore = 0;
+    this.globalScore = 0;
+  }
 
-  public getCurrentScore(){
-    return this.currentScore;
-  }
+  public rollDice(): Dice {
+    const dice = Dice.generateRandom();
 
-  public getGlobalScore(){
-    return this.globalScore;
-  }
+    if (dice === 1) {
+      this.currentScore = 0;
 
-  constructor(
-    public readonly playerName= `Player ${++Player.playerCount}`,
-  ){}
-
-
-    public resetScores(){
-        this.currentScore = 0;
-        this.globalScore = 0;
+      return dice;
     }
 
+    this.currentScore += dice;
 
-  public rollDice(): Dice {
+    return dice;
+  }
 
-    const dice = Dice.generateRandom();
-
-    if( dice === 1 ){
-
-      this.currentScore = 0;
-
-      return dice;
-
-
-    }
-
-    this.currentScore+= dice;
-
-    return dice;
-
-  }
-
-  public hold(): void{
-
-    this.globalScore+= this.currentScore;
-    this.currentScore=0;
-
-  }
-
+  public hold(): void {
+    this.globalScore += this.currentScore;
+    this.currentScore = 0;
+  }
 }
 
-class Game {
+namespace Game {
+  export type PlayerId = 0 | 1;
+}
 
-  private static readonly scoreToWin= 10;
+class Game {
+  private static readonly scoreToWin = 10;
 
-    private isGamePlaying : boolean = false;
+  private static playerIds: Game.PlayerId[] = [0, 1];
+  private readonly player0: Player;
+  private readonly player1: Player;
 
-  private readonly player1: Player;
-  private readonly player2: Player;
-  private readonly wrapper : HTMLElement;
+  private playerPlayingId: Game.PlayerId | undefined;
 
-  private playerPlaying: 1 | 2 | undefined;
+  private get playerNotPlayingId(): Game.PlayerId{
+    switch(this.playerPlayingId){
+      case 0: return 1;
+      case 1: return 0;
+    }
+  }
 
+  private lastRolledDice: Dice;
 
-  constructor(htmlElement: HTMLElement){
+  private getPlayerFromId(id: Game.PlayerId) {
 
-    this.player1 = new Player("Player 1");
-    this.player2 = new Player("Player 2");
-    this.wrapper = htmlElement;
+    switch (id) {
+      case 0:
+        return this.player0;
+      case 1:
+        return this.player1;
+    }
+  }
 
-  }
+  constructor(
+    private htmlElement: HTMLElement
+  ) {
+    this.player0 = new Player("Player 0");
+    this.player1 = new Player("Player 1");
 
-  private getWinner() : 1 | 2 | undefined{
-      
-      if(this.player1.getGlobalScore() >= Game.scoreToWin){
-          return 1;
-      } 
-      
-      if(this.player2.getGlobalScore() >= Game.scoreToWin){
-          return 2;
-      }
+    htmlElement
+      .querySelector(".btn-new")
+      .addEventListener("click", ()=> this.onBtnNewGame());
+
+    htmlElement
+      .querySelector(".btn-roll")
+      .addEventListener("click", ()=> this.onBtnRoll());
+
+    htmlElement
+      .querySelector(".btn-hold")
+      .addEventListener("click", ()=> this.onBtnHold());
     
-      return undefined;
+
+  }
+
+  private onBtnHold(): void{
+
+    if (this.getWinner() != undefined) {
+      return;
+    }
+
+    this.getPlayerFromId(this.playerPlayingId).hold();
+
+    this.playerPlayingId = this.playerNotPlayingId;
+
+    this.render();
+
+  }
+
+  private onBtnRoll(): void{
+
+    if (this.getWinner() != undefined) {
+      return;
+    }
+
+    this.lastRolledDice = this.getPlayerFromId(this.playerPlayingId)
+      .rollDice();
       
+    if (this.lastRolledDice === 1) {
+      this.playerPlayingId = this.playerNotPlayingId;
+    }
+
+    this.render();
+
   }
 
 
+  private onBtnNewGame(): void{
 
-  private render(dice, winner : 1 | 2 | undefined){
-
-
-    for(const i of [0, 1]){
-        document.getElementById(`current-${i}`).innerText = i === 0 ?
-        `${this.player1.getCurrentScore()}` : `${this.player2.getCurrentScore()}`;
-
-        document.getElementById(`score-${i}`).innerText = i === 0 ?
-        `${this.player1.getGlobalScore()}` : `${this.player2.getGlobalScore()}`;
+    for( const playerId of Game.playerIds){
+      this.getPlayerFromId(playerId).resetScores();
     }
+
+    this.playerPlayingId = 0;
+
+    this.render();
+
+
+  }
+
+  private getWinner(): Game.PlayerId | undefined {
+    for (const playerId of Game.playerIds) {
+      if (this.getPlayerFromId(playerId).getGlobalScore() < Game.scoreToWin) {
+        continue;
+      }
+
+      return playerId;
+    }
+
+    return undefined;
+  }
+
+  private render = (() => {
+
+    const getPlayerPanel = (playerId: Game.PlayerId) =>
+      this.htmlElement.querySelector(`.player-${playerId}-panel`);
+
+    return () => {
+
+      for (const playerId of Game.playerIds) {
+
+        for (const key of ["current", "score"] as const) {
+
+          document
+            .getElementById(`${key}-${playerId}`)
+            .innerText = 
+              this.getPlayerFromId(playerId)
+                [key === "current" ? "getCurrentScore" : "getGlobalScore"]()
+                .toString();
+
+        }
+
+        getPlayerPanel(playerId)
+          .classList
+          .remove("active","winner");
+
+        document
+          .getElementById(`name-${playerId}`)
+          .innerText = 
+            this.getPlayerFromId(playerId).name;
         
-    this.wrapper.querySelector(".dice").setAttribute("src", `${getDiceImageUrl(dice)}`);
+      }
 
+      this.htmlElement
+        .querySelector(".dice")
+        .setAttribute("src", `${Dice.getImageUrl(this.lastRolledDice)}`);
 
+      {
+      
+        const winner = this.getWinner();
 
-    changeActivePanel : {
-        const panel0 = this.wrapper.querySelector(".player-0-panel");
-        const panel1 = this.wrapper.querySelector(".player-1-panel");
+        if (winner != undefined) {
 
-        if(winner != undefined){
+          document.getElementById(`name-${winner}`).innerText = "Winner";
 
-            for(const panel of [panel0, panel1]){
-                panel.classList.remove("active");
-            }
+          getPlayerPanel(winner).classList.add("winner");
+          
+        }else{
 
-            document.getElementById(`name-${winner - 1}`).innerText = "Winner";
-            
-            winner === 1 ? panel0.classList.add("winner") : panel1.classList.add("winner");
-
-            return;
+          getPlayerPanel(this.playerPlayingId).classList.add("active");
 
         }
-
-        if(this.playerPlaying === 1){
-            panel1.classList.remove("active");
-            panel0.classList.add("active");
-
-            break changeActivePanel;
-        }
-
-        panel1.classList.add("active");
-        panel0.classList.remove("active");
-
-    }
-
-  }
-
-    public gameInit(){
-        this.wrapper.querySelector(".btn-new").addEventListener("click", ()=>{
-
-            for(const player of [this.player1, this.player2]){
-                player.resetScores();
-            }
-
-            this.playerPlaying = 1;
-
-
-            for(const panel of [0, 1]){
-                this.wrapper.querySelector(`.player-${panel}-panel`).classList.remove("winner");
-                document.getElementById(`name-${panel}`).innerText = `Player ${panel + 1}`;
-            }
-
-
-            this.render(1, undefined);
-            
-
-
-            if(!this.isGamePlaying){
-                this.play();
-            }
-
-            
-
-        });
-    }
-
-    private play(){
-
-        this.playerPlaying = 1;
-
-        let dice;
-
-        console.log(this.getWinner());
-
-        this.isGamePlaying = true;
-
-
-
-        for(const selector of [".btn-roll", ".btn-hold"]){
-
-            this.wrapper.querySelector(`${selector}`).addEventListener("click", ()=>{
         
-                if(this.getWinner() != undefined){
-                    return;
-                }
+      }
 
-                rollAndHold : {
+    };
 
-                    if(selector === ".btn-roll"){
-                        dice = this.playerPlaying === 1 ? this.player1.rollDice() : 
-                        this.player2.rollDice();
-                        break rollAndHold;
-                    }
-
-                    this.playerPlaying === 1 ? this.player1.hold() : this.player2.hold();
-                    this.playerPlaying = this.playerPlaying === 1 ? 2 : 1;
-                }
-
-
-                if(dice === 1){
-                    this.playerPlaying = this.playerPlaying === 1 ? 2 : 1;
-                }
-
-                
-
-
-                this.render(dice, this.getWinner());
-
-
-
-
-
-            });
-
-        }
-
-
-
-
-    }
-
-
-
-
+  })();
 
 }
 
-
-
-    const game = new Game(document.querySelector(".wrapper"));
-
-    game.gameInit();
-
-
-
+const game = new Game(document.querySelector(".wrapper"));
 
