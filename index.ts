@@ -119,7 +119,7 @@ class Game {
 
   private onBtnHold(): void{
 
-    if (this.getWinner() != undefined) {
+    if (this.getWinner() != undefined || this.playerPlayingId === undefined) {
       return;
     }
 
@@ -132,8 +132,9 @@ class Game {
   }
 
   private onBtnRoll(): void{
+   
 
-    if (this.getWinner() != undefined) {
+    if (this.getWinner() != undefined || this.playerPlayingId === undefined) {
       return;
     }
 
@@ -205,9 +206,11 @@ class Game {
         
       }
 
+    
       this.htmlElement
         .querySelector(".dice")
-        .setAttribute("src", `${Dice.getImageUrl(this.lastRolledDice)}`);
+        .setAttribute("src", `${Dice.getImageUrl(this.lastRolledDice === undefined ?
+        1 : this.lastRolledDice)}`);
 
       {
       
