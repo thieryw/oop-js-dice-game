@@ -1,6 +1,7 @@
 // Import stylesheets
 import "./style.css";
 import { Evt, StatefulReadonlyEvt } from "evt";
+import { id } from "evt/tools/typeSafety";
 /*
 GAME RULES:
 
@@ -37,6 +38,7 @@ class Player {
     return this._evtCurrentScore;
   }
 
+  //This is equivalent to the above function.
   public get evtGlobalScore() {
     return Evt.asNonPostable(this._evtGlobalScore);;
   }
@@ -77,8 +79,8 @@ class Game {
   private static readonly scoreToWin = 10;
 
   private static playerIds: Game.PlayerId[] = [0, 1];
-  private readonly player0: Player;
-  private readonly player1: Player;
+  private readonly player0= new Player("Player 0");
+  private readonly player1= new Player("Player 1");
 
   //private playerPlayingId: Game.PlayerId;
   private readonly evtPlayerPlayingId = Evt.create<Game.PlayerId>(0);
@@ -103,146 +105,200 @@ class Game {
     }
   }
 
-  constructor(
-    private htmlElement: HTMLElement
-  ) {
-    this.player0 = new Player("Player 0");
-    this.player1 = new Player("Player 1");
-
-
-    htmlElement
-      .querySelector(".btn-new")
-      .addEventListener("click", ()=> this.onBtnNewGame());
-
-    htmlElement
-      .querySelector(".btn-roll")
-      .addEventListener("click", ()=> this.onBtnRoll());
-
-    htmlElement
-      .querySelector(".btn-hold")
-      .addEventListener("click", ()=> this.onBtnHold());
-    
-
-  }
-
-  private onBtnHold(): void{
-
-    if (this.getWinner() != undefined || this.evtPlayerPlayingId.state === undefined) {
-      return;
-    }
-
-    this.getPlayerFromId(this.evtPlayerPlayingId.state).hold();
-
-    this.evtPlayerPlayingId.state = this.playerNotPlayingId;
-
-    this.render();
-
-  }
-
-  private onBtnRoll(): void{
-   
-
-    if (this.getWinner() != undefined || this.evtPlayerPlayingId.state === undefined) {
-      return;
-    }
-
-    this.evtLastRolledDice.state = this.getPlayerFromId(this.evtPlayerPlayingId.state)
-      .rollDice();
+  private evtWinner = Evt.asNonPostable(
+    Evt.merge(
+      Game.playerIds
+        .map(playerId=> this.getPlayerFromId(playerId).evtGlobalScore.evtChange)
+    )
+    .pipe(()=> {
       
-    if (this.evtLastRolledDice.state === 1) {
-      this.evtPlayerPlayingId.state = this.playerNotPlayingId;
-    }
+      for (const playerId of Game.playerIds) {
+        if (this.getPlayerFromId(playerId).evtGlobalScore.state < Game.scoreToWin) {
+          continue;
+        }
 
-    this.render();
-
-  }
-
-
-  private onBtnNewGame(): void{
-
-    for( const playerId of Game.playerIds){
-      this.getPlayerFromId(playerId).resetScores();
-    }
-
-    this.evtPlayerPlayingId.state = 0;
-
-    this.render();
-
-
-  }
-
-  private getWinner(): Game.PlayerId | undefined {
-    for (const playerId of Game.playerIds) {
-      if (this.getPlayerFromId(playerId).evtGlobalScore.state < Game.scoreToWin) {
-        continue;
+        return [ playerId ];
       }
 
-      return playerId;
-    }
+      return [ undefined ];
 
-    return undefined;
+    })
+    .toStateful(undefined)
+  )
+  ;
+
+  constructor(
+    htmlElement: HTMLElement
+  ) {
+
+    this.setupUserInputHandlers({ htmlElement });
+    this.setupReactiveRendering({ htmlElement });
+
   }
 
-  private render = (() => {
+  private setupUserInputHandlers = (()=>{
+
+      const onBtnHold= (): void=>{
+
+        if (this.evtWinner.state !== undefined || this.evtPlayerPlayingId.state === undefined) {
+          return;
+        }
+
+        this.getPlayerFromId(this.evtPlayerPlayingId.state).hold();
+
+        if(this.evtWinner.state === undefined){
+          this.evtPlayerPlayingId.state = this.playerNotPlayingId;
+        }
+
+      };
+
+      const onBtnRoll= (): void=>{
+      
+
+        if (this.evtWinner.state !== undefined || this.evtPlayerPlayingId.state === undefined) {
+          return;
+        }
+
+        this.evtLastRolledDice.state = this.getPlayerFromId(this.evtPlayerPlayingId.state)
+          .rollDice();
+          
+        if (this.evtLastRolledDice.state === 1) {
+          this.evtPlayerPlayingId.state = this.playerNotPlayingId;
+        }
+
+
+
+      };
+
+
+      const onBtnNewGame= (): void=> {
+
+        for( const playerId of Game.playerIds){
+          this.getPlayerFromId(playerId).resetScores();
+        }
+
+        this.evtPlayerPlayingId.state = 0;
+
+      };
+
+      return (params: { htmlElement: HTMLElement; })=> {
+
+        const { htmlElement }= params;
+
+        htmlElement
+          .querySelector(".btn-new")
+          .addEventListener("click", ()=> onBtnNewGame());
+
+        htmlElement
+          .querySelector(".btn-roll")
+          .addEventListener("click", ()=> onBtnRoll());
+
+        htmlElement
+          .querySelector(".btn-hold")
+          .addEventListener("click", ()=> onBtnHold());
+      
+      };
+
+
+
+  })();
+
+
+  private setupReactiveRendering(
+    params: { htmlElement: HTMLElement; }
+  ): void{
+
+    const { htmlElement }= params;
 
     const getPlayerPanel = (playerId: Game.PlayerId) =>
-      this.htmlElement.querySelector(`.player-${playerId}-panel`);
+      htmlElement.querySelector(`.player-${playerId}-panel`);
 
-    return () => {
+    for (const playerId of Game.playerIds) {
 
-      for (const playerId of Game.playerIds) {
+        const player= this.getPlayerFromId(playerId);
 
         for (const key of ["current", "score"] as const) {
 
-          document
-            .getElementById(`${key}-${playerId}`)
-            .innerText = 
-              this.getPlayerFromId(playerId)
-                [key === "current" ? "evtCurrentScore" : "evtGlobalScore"]
-                .state
-                .toString();
+          const evtScore = player[
+            key === "current" ? 
+            "evtCurrentScore": 
+            "evtGlobalScore" 
+          ];
+
+          Evt.useEffect(
+            () =>  {
+
+              getPlayerPanel(playerId)
+                .classList
+                .remove("winner");
+
+              document
+              .getElementById(`name-${playerId}`)
+              .innerText = player.name;
+
+            },
+            this.evtWinner.evtChange
+              .toStateless()
+              .pipe(playerId => playerId === undefined ? ["!"]: null)
+          );
+
+          Evt.useEffect(
+            ()=> document
+                  .getElementById(`${key}-${playerId}`)
+                  .innerText = evtScore.state.toString(),
+            evtScore.evtChange
+          );
 
         }
 
-        getPlayerPanel(playerId)
-          .classList
-          .remove("active","winner");
-
-        document
-          .getElementById(`name-${playerId}`)
-          .innerText = 
-            this.getPlayerFromId(playerId).name;
         
-      }
+    }
 
-
-      this.htmlElement
+    Evt.useEffect(
+      ()=> htmlElement
         .querySelector(".dice")
-        .setAttribute("src", `${Dice.getImageUrl( this.evtLastRolledDice.state )}`)
-        ;
-      
+        .setAttribute("src", `${Dice.getImageUrl( this.evtLastRolledDice.state )}`),
+      this.evtLastRolledDice.evtChange
+    );
 
-      {
-      
-        const winner = this.getWinner();
 
-        if (winner != undefined) {
 
-          document.getElementById(`name-${winner}`).innerText = "Winner";
+    Evt.useEffect(
+      ()=>{
 
-          getPlayerPanel(winner).classList.add("winner");
-          
-        }else{
-
-          getPlayerPanel(this.evtPlayerPlayingId.state).classList.add("active");
-
+        if( this.evtWinner.state !== undefined ){
+          return;
         }
-        
-      }
 
-    };
+        getPlayerPanel(this.playerNotPlayingId).classList.remove("active");
+        getPlayerPanel(this.evtPlayerPlayingId.state).classList.add("active");
 
-  })();
+
+      },
+      this.evtPlayerPlayingId.evtChange
+    );
+
+    
+    Evt.useEffect(
+      ()=>{
+
+        const winner = this.evtWinner.state;
+
+        if( winner === undefined){
+          return;
+        }
+
+        document.getElementById(`name-${winner}`).innerText = "Winner";
+
+        getPlayerPanel(winner).classList.add("winner");
+          
+
+      },
+      this.evtWinner.evtChange
+    );
+    
+
+  }
 
 }
 
