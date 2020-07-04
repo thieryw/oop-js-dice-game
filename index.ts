@@ -1,5 +1,6 @@
 // Import stylesheets
 import "./style.css";
+import { Evt, StatefulReadonlyEvt } from "evt";
 /*
 GAME RULES:
 
@@ -24,43 +25,47 @@ namespace Dice {
 }
 
 class Player {
-  private static playerCount = 0;
 
-  private currentScore = 0;
-  private globalScore = 0;
+  //private currentScore = 0;
+  private readonly _evtCurrentScore= Evt.create<number>(0);
+  
+  //private globalScore = 0;
+  private readonly _evtGlobalScore= Evt.create<number>(0);
 
-  public getCurrentScore() {
-    return this.currentScore;
+  
+  public get evtCurrentScore(): StatefulReadonlyEvt<number>{
+    return this._evtCurrentScore;
   }
 
-  public getGlobalScore() {
-    return this.globalScore;
+  public get evtGlobalScore() {
+    return Evt.asNonPostable(this._evtGlobalScore);;
   }
+  
 
-  constructor(public readonly name = `Player ${++Player.playerCount}`) {}
+  constructor(public readonly name: string) {}
 
   public resetScores() {
-    this.currentScore = 0;
-    this.globalScore = 0;
+    this._evtCurrentScore.state = 0;
+    this._evtGlobalScore.state = 0;
   }
 
   public rollDice(): Dice {
     const dice = Dice.generateRandom();
 
     if (dice === 1) {
-      this.currentScore = 0;
+      this._evtCurrentScore.state = 0;
 
       return dice;
     }
 
-    this.currentScore += dice;
+    this._evtCurrentScore.state += dice;
 
     return dice;
   }
 
   public hold(): void {
-    this.globalScore += this.currentScore;
-    this.currentScore = 0;
+    this._evtGlobalScore.state += this.evtCurrentScore.state;
+    this._evtCurrentScore.state = 0;
   }
 }
 
@@ -75,16 +80,18 @@ class Game {
   private readonly player0: Player;
   private readonly player1: Player;
 
-  private playerPlayingId: Game.PlayerId | undefined;
+  //private playerPlayingId: Game.PlayerId;
+  private readonly evtPlayerPlayingId = Evt.create<Game.PlayerId>(0);
 
   private get playerNotPlayingId(): Game.PlayerId{
-    switch(this.playerPlayingId){
+    switch(this.evtPlayerPlayingId.state){
       case 0: return 1;
       case 1: return 0;
     }
   }
 
-  private lastRolledDice: Dice;
+  //private lastRolledDice: Dice = 1;
+  private readonly evtLastRolledDice= Evt.create<Dice>(1);
 
   private getPlayerFromId(id: Game.PlayerId) {
 
@@ -101,6 +108,7 @@ class Game {
   ) {
     this.player0 = new Player("Player 0");
     this.player1 = new Player("Player 1");
+
 
     htmlElement
       .querySelector(".btn-new")
@@ -119,13 +127,13 @@ class Game {
 
   private onBtnHold(): void{
 
-    if (this.getWinner() != undefined || this.playerPlayingId === undefined) {
+    if (this.getWinner() != undefined || this.evtPlayerPlayingId.state === undefined) {
       return;
     }
 
-    this.getPlayerFromId(this.playerPlayingId).hold();
+    this.getPlayerFromId(this.evtPlayerPlayingId.state).hold();
 
-    this.playerPlayingId = this.playerNotPlayingId;
+    this.evtPlayerPlayingId.state = this.playerNotPlayingId;
 
     this.render();
 
@@ -134,15 +142,15 @@ class Game {
   private onBtnRoll(): void{
    
 
-    if (this.getWinner() != undefined || this.playerPlayingId === undefined) {
+    if (this.getWinner() != undefined || this.evtPlayerPlayingId.state === undefined) {
       return;
     }
 
-    this.lastRolledDice = this.getPlayerFromId(this.playerPlayingId)
+    this.evtLastRolledDice.state = this.getPlayerFromId(this.evtPlayerPlayingId.state)
       .rollDice();
       
-    if (this.lastRolledDice === 1) {
-      this.playerPlayingId = this.playerNotPlayingId;
+    if (this.evtLastRolledDice.state === 1) {
+      this.evtPlayerPlayingId.state = this.playerNotPlayingId;
     }
 
     this.render();
@@ -156,7 +164,7 @@ class Game {
       this.getPlayerFromId(playerId).resetScores();
     }
 
-    this.playerPlayingId = 0;
+    this.evtPlayerPlayingId.state = 0;
 
     this.render();
 
@@ -165,7 +173,7 @@ class Game {
 
   private getWinner(): Game.PlayerId | undefined {
     for (const playerId of Game.playerIds) {
-      if (this.getPlayerFromId(playerId).getGlobalScore() < Game.scoreToWin) {
+      if (this.getPlayerFromId(playerId).evtGlobalScore.state < Game.scoreToWin) {
         continue;
       }
 
@@ -190,7 +198,8 @@ class Game {
             .getElementById(`${key}-${playerId}`)
             .innerText = 
               this.getPlayerFromId(playerId)
-                [key === "current" ? "getCurrentScore" : "getGlobalScore"]()
+                [key === "current" ? "evtCurrentScore" : "evtGlobalScore"]
+                .state
                 .toString();
 
         }
@@ -206,11 +215,12 @@ class Game {
         
       }
 
-    
+
       this.htmlElement
         .querySelector(".dice")
-        .setAttribute("src", `${Dice.getImageUrl(this.lastRolledDice === undefined ?
-        1 : this.lastRolledDice)}`);
+        .setAttribute("src", `${Dice.getImageUrl( this.evtLastRolledDice.state )}`)
+        ;
+      
 
       {
       
@@ -224,7 +234,7 @@ class Game {
           
         }else{
 
-          getPlayerPanel(this.playerPlayingId).classList.add("active");
+          getPlayerPanel(this.evtPlayerPlayingId.state).classList.add("active");
 
         }
         
