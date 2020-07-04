@@ -233,13 +233,13 @@ class Game {
                 .remove("winner");
 
               document
-              .getElementById(`name-${playerId}`)
-              .innerText = player.name;
+                .getElementById(`name-${playerId}`)
+                .innerText = player.name;
 
             },
             this.evtWinner.evtChange
               .toStateless()
-              .pipe(playerId => playerId === undefined ? ["!"]: null)
+              .pipe(playerId => playerId === undefined)
           );
 
           Evt.useEffect(
