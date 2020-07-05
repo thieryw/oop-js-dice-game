@@ -75,13 +75,13 @@ namespace Game {
 }
 
 class Game {
-  private static readonly scoreToWin = 10;
+
+  private static readonly scoreToWin = 40;
 
   private static playerIds: Game.PlayerId[] = [0, 1];
-  private readonly player0= new Player("Player 0");
-  private readonly player1= new Player("Player 1");
+  private readonly player0= new Player("Player 1");
+  private readonly player1= new Player("Player 2");
 
-  //private playerPlayingId: Game.PlayerId;
   private readonly evtPlayerPlayingId = Evt.create<Game.PlayerId>(0);
 
   private get playerNotPlayingId(): Game.PlayerId{
@@ -91,16 +91,12 @@ class Game {
     }
   }
 
-  //private lastRolledDice: Dice = 1;
   private readonly evtLastRolledDice= Evt.create<Dice>(1);
 
   private getPlayerFromId(id: Game.PlayerId) {
-
     switch (id) {
-      case 0:
-        return this.player0;
-      case 1:
-        return this.player1;
+      case 0: return this.player0;
+      case 1: return this.player1;
     }
   }
 
@@ -109,20 +105,13 @@ class Game {
       Game.playerIds
         .map(playerId=> this.getPlayerFromId(playerId).evtGlobalScore.evtChange)
     )
-    .pipe(()=> {
-      
-      for (const playerId of Game.playerIds) {
-        if (this.getPlayerFromId(playerId).evtGlobalScore.state < Game.scoreToWin) {
-          continue;
-        }
-
-        return [ playerId ];
-      }
-
-      return [ undefined ];
-
-    })
-    .toStateful(undefined)
+    .toStateful()
+    .pipe(()=> [ 
+      Game.playerIds.find(
+        playerId => 
+          this.getPlayerFromId(playerId).evtGlobalScore.state >= Game.scoreToWin 
+      ) 
+    ])
   )
   ;
 
@@ -135,28 +124,32 @@ class Game {
 
   }
 
-  private setupUserInputHandlers = (()=>{
+  private setupUserInputHandlers(
+    params: { htmlElement: HTMLElement; }
+  ){
 
-      const onBtnHold= (): void=>{
+    const { htmlElement }= params;
 
-        if (this.evtWinner.state !== undefined || this.evtPlayerPlayingId.state === undefined) {
-          return;
+    Evt.from(
+      htmlElement.querySelector(".btn-new"),
+      "click"
+    )
+      .attach(()=> {
+
+        for( const playerId of Game.playerIds){
+          this.getPlayerFromId(playerId).resetScores();
         }
 
-        this.getPlayerFromId(this.evtPlayerPlayingId.state).hold();
+        this.evtPlayerPlayingId.state = 0;
 
-        if(this.evtWinner.state === undefined){
-          this.evtPlayerPlayingId.state = this.playerNotPlayingId;
-        }
-
-      };
-
-      const onBtnRoll= (): void=>{
-      
-
-        if (this.evtWinner.state !== undefined || this.evtPlayerPlayingId.state === undefined) {
-          return;
-        }
+      });
+    
+    Evt.from(
+      htmlElement.querySelector(".btn-roll"),
+      "click"
+    )
+      .pipe(()=> this.evtWinner.state === undefined)
+      .attach(()=> {
 
         this.evtLastRolledDice.state = this.getPlayerFromId(this.evtPlayerPlayingId.state)
           .rollDice();
@@ -165,43 +158,24 @@ class Game {
           this.evtPlayerPlayingId.state = this.playerNotPlayingId;
         }
 
+      });
 
+    Evt.from(
+      htmlElement.querySelector(".btn-hold"),
+      "click"
+    )
+      .pipe(()=> this.evtWinner.state === undefined)
+      .attach(()=> {
 
-      };
+        this.getPlayerFromId(this.evtPlayerPlayingId.state).hold();
 
-
-      const onBtnNewGame= (): void=> {
-
-        for( const playerId of Game.playerIds){
-          this.getPlayerFromId(playerId).resetScores();
+        if(this.evtWinner.state === undefined){
+          this.evtPlayerPlayingId.state = this.playerNotPlayingId;
         }
 
-        this.evtPlayerPlayingId.state = 0;
+      });
 
-      };
-
-      return (params: { htmlElement: HTMLElement; })=> {
-
-        const { htmlElement }= params;
-
-        htmlElement
-          .querySelector(".btn-new")
-          .addEventListener("click", ()=> onBtnNewGame());
-
-        htmlElement
-          .querySelector(".btn-roll")
-          .addEventListener("click", ()=> onBtnRoll());
-
-        htmlElement
-          .querySelector(".btn-hold")
-          .addEventListener("click", ()=> onBtnHold());
-      
-      };
-
-
-
-  })();
-
+  }
 
   private setupReactiveRendering(
     params: { htmlElement: HTMLElement; }
@@ -220,8 +194,8 @@ class Game {
 
           const evtScore = player[
             key === "current" ? 
-            "evtCurrentScore": 
-            "evtGlobalScore" 
+              "evtCurrentScore": 
+              "evtGlobalScore" 
           ];
 
           Evt.useEffect(
@@ -260,8 +234,6 @@ class Game {
         .setAttribute("src", `${Dice.getImageUrl( this.evtLastRolledDice.state )}`),
       this.evtLastRolledDice
     );
-
-
 
     Evt.useEffect(
       ()=>{
