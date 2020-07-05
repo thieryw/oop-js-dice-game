@@ -1,7 +1,6 @@
 // Import stylesheets
 import "./style.css";
 import { Evt, StatefulReadonlyEvt } from "evt";
-import { id } from "evt/tools/typeSafety";
 /*
 GAME RULES:
 
@@ -237,16 +236,17 @@ class Game {
                 .innerText = player.name;
 
             },
-            this.evtWinner.evtChange
+            this.evtWinner
+              .evtChange
               .toStateless()
-              .pipe(playerId => playerId === undefined)
+              .pipe(winnerPlayerId => winnerPlayerId === undefined)
           );
 
           Evt.useEffect(
             ()=> document
                   .getElementById(`${key}-${playerId}`)
                   .innerText = evtScore.state.toString(),
-            evtScore.evtChange
+            evtScore
           );
 
         }
@@ -258,45 +258,40 @@ class Game {
       ()=> htmlElement
         .querySelector(".dice")
         .setAttribute("src", `${Dice.getImageUrl( this.evtLastRolledDice.state )}`),
-      this.evtLastRolledDice.evtChange
+      this.evtLastRolledDice
     );
 
 
 
     Evt.useEffect(
       ()=>{
-
-        if( this.evtWinner.state !== undefined ){
-          return;
-        }
 
         getPlayerPanel(this.playerNotPlayingId).classList.remove("active");
         getPlayerPanel(this.evtPlayerPlayingId.state).classList.add("active");
 
-
       },
-      this.evtPlayerPlayingId.evtChange
+      this.evtPlayerPlayingId
+        .evtChange
+        .toStateless()
+        .pipe(()=> this.evtWinner.state === undefined)
     );
 
-    
-    Evt.useEffect(
-      ()=>{
+    this.evtWinner
+        .evtChange
+        .toStateless()
+        .pipe(
+          playerId=> playerId === undefined ? 
+            null : [ playerId ]
+        )
+        .attach(winnerPlayerId=>{
 
-        const winner = this.evtWinner.state;
+          document.getElementById(`name-${winnerPlayerId}`).innerText = "Winner";
 
-        if( winner === undefined){
-          return;
-        }
+          getPlayerPanel(winnerPlayerId).classList.add("winner");
 
-        document.getElementById(`name-${winner}`).innerText = "Winner";
+        })
+        ;
 
-        getPlayerPanel(winner).classList.add("winner");
-          
-
-      },
-      this.evtWinner.evtChange
-    );
-    
 
   }
 
