@@ -103,7 +103,10 @@ class Game {
   private evtWinner = Evt.asNonPostable(
     Evt.merge(
       Game.playerIds
-        .map(playerId=> this.getPlayerFromId(playerId).evtGlobalScore.evtChange)
+        .map(
+          playerId=> this.getPlayerFromId(playerId)
+            .evtGlobalScore.evtChange
+        )
     )
     .toStateful()
     .pipe(()=> [ 
