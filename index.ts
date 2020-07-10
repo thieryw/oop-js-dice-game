@@ -1,24 +1,8 @@
 // Import stylesheets
 import "./style.css";
-
-
-
 import { getAppApi, AppEventHandlers, PlayerId } from "./appLogic";
 
 const rootElement= document.querySelector(".wrapper");
-
-rootElement
-  .querySelector(".btn-new")
-  .addEventListener("click", ()=> appApi.newGame());
-
-rootElement
-  .querySelector(".btn-roll")
-  .addEventListener("click", ()=> appApi.rollDice());
-
-rootElement
-  .querySelector(".btn-hold")
-  .addEventListener("click", ()=> appApi.hold());
-
 
 const  { appEventHandlers } =(()=>{
 
@@ -62,12 +46,19 @@ const  { appEventHandlers } =(()=>{
 
 })();
 
+const appApi= getAppApi({ appEventHandlers });
 
+rootElement
+  .querySelector(".btn-new")
+  .addEventListener("click", ()=> appApi.newGame());
 
-const appApi= getAppApi({
-  appEventHandlers
-  
-});
+rootElement
+  .querySelector(".btn-roll")
+  .addEventListener("click", ()=> appApi.rollDice());
+
+rootElement
+  .querySelector(".btn-hold")
+  .addEventListener("click", ()=> appApi.hold());
 
 
 

@@ -24,6 +24,8 @@ export type AppApi = {
   hold(): void;
 };
 
+
+
 export type AppEventHandlers = {
   onScoreChange: (
     params: {
@@ -36,13 +38,54 @@ export type AppEventHandlers = {
   onPlayerWin: (playerId: PlayerId | undefined)=> void;
 };
 
+type GameState = Readonly<{
+  player0GlobalScore: number;
+  player1GlobalScore: number;
+  player0CurrentScore: number;
+  player1CurrentScore: number;
+  lastRolledDice: Dice;
+  playerPlaying: PlayerId;
+  hasPlayerWon: boolean;
+}>;
+
 export function getAppApi(
   params: {
     appEventHandlers: AppEventHandlers;
   }
 ): AppApi {
 
-  return null as any;
+  const { appEventHandlers } = params;
+
+  let gameState: GameState= null as any;
+
+  return {
+    "newGame": ()=>{
+
+      gameState= {
+        "player0GlobalScore": 0,
+        "player1GlobalScore": 0,
+        "player0CurrentScore": 0,
+        "player1CurrentScore": 0,
+        "lastRolledDice": 1,
+        "playerPlaying": 0,
+        "hasPlayerWon": false
+
+      };
+
+      appEventHandlers.onScoreChange({
+        "playerId" :gameState.playerPlaying,
+        "scoreType" :"CURRENT"
+      })
+
+      appEventHandlers.onScoreChange({
+        "playerId": 
+      })
+
+
+    },
+    "hold": null as any,
+    "rollDice": null as any
+  }
 
 }
 
