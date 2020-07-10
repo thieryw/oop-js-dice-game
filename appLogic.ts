@@ -1,18 +1,21 @@
 
 
-export namespace types {
+export type Dice = 1 | 2 | 3 | 4 | 5 | 6;
 
-  export type Dice = 1 | 2 | 3 | 4 | 5 | 6;
+export type PlayerId= 0 | 1;
 
-  export namespace Dice {
-    export function getImageUrl(diceNumber: Dice) {
-      return `//thieryw.github.io/oop-js-dice-game/docs/dice-${diceNumber}.png`;
+export namespace PlayerId {
+  
+  export function otherPlayer(playerId: PlayerId): PlayerId{
+    switch(this.playerPlayingId){
+      case 0: return 1;
+      case 1: return 0;
     }
   }
 
-  export type PlayerId= 0 | 1;
+  export const every: PlayerId[] = [0, 1];
 
-}
+};
 
 
 export type AppApi = {
@@ -24,13 +27,13 @@ export type AppApi = {
 export type AppEventHandler = {
   onScoreChange(
     params: {
-      playerId: types.PlayerId,
+      playerId: PlayerId,
       scoreType: "GLOBAL" | "CURRENT";
     }
   ): void;
-  onDiceChange(newDice: types.Dice): void;
-  onPlayerPlayingChange(playerId: types.PlayerId): void;
-  onPlayerWin(playerId: types.PlayerId): void;
+  onDiceChange(newDice: Dice): void;
+  onPlayerPlayingChange(playerId: PlayerId): void;
+  onPlayerWin(playerId: PlayerId | undefined): void;
 };
 
 export function getAppApi(
