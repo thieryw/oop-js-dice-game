@@ -3,22 +3,29 @@ import "./style.css";
 
 
 
-import { getAppApi, AppEventHandler, PlayerId } from "./appLogic";
+import { getAppApi, AppEventHandlers, PlayerId } from "./appLogic";
+
+const rootElement= document.querySelector(".wrapper");
+
+rootElement
+  .querySelector(".btn-new")
+  .addEventListener("click", ()=> appApi.newGame());
+
+rootElement
+  .querySelector(".btn-roll")
+  .addEventListener("click", ()=> appApi.rollDice());
+
+rootElement
+  .querySelector(".btn-hold")
+  .addEventListener("click", ()=> appApi.hold());
 
 
-const appApi= getAppApi({
-  "eventHandlers": null as any
-});
-
-  const rootElement= document.querySelector(".wrapper");
-
-
-const  { appEventHandler } =(()=>{
+const  { appEventHandlers } =(()=>{
 
   const getPlayerPanel = (playerId: PlayerId) =>
         this.htmlElement.querySelector(`.player-${playerId}-panel`);
 
-  const appEventHandler: AppEventHandler ={
+  const appEventHandlers: AppEventHandlers ={
     "onDiceChange": dice => 
         rootElement
           .querySelector(".dice")
@@ -45,27 +52,26 @@ const  { appEventHandler } =(()=>{
       getPlayerPanel(playerId).classList.add("winner");
 
     },
-    "onScoreChange": ({playerId, scoreType})=> {}
+    "onScoreChange": ({ playerId, scoreType})=> {
+
+    }
 
   };
 
-  return { appEventHandler };
+  return { appEventHandlers };
 
 })();
 
 
 
+const appApi= getAppApi({
+  appEventHandlers
+  
+});
 
-rootElement
-  .querySelector(".btn-new")
-  .addEventListener("click", ()=> appApi.newGame());
 
-rootElement
-  .querySelector(".btn-roll")
-  .addEventListener("click", ()=> appApi.rollDice());
 
-rootElement
-  .querySelector(".btn-hold")
-  .addEventListener("click", ()=> appApi.hold());
+
+
 
 

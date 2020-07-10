@@ -24,21 +24,21 @@ export type AppApi = {
   hold(): void;
 };
 
-export type AppEventHandler = {
-  onScoreChange(
+export type AppEventHandlers = {
+  onScoreChange: (
     params: {
       playerId: PlayerId,
       scoreType: "GLOBAL" | "CURRENT";
     }
-  ): void;
-  onDiceChange(newDice: Dice): void;
-  onPlayerPlayingChange(playerId: PlayerId): void;
-  onPlayerWin(playerId: PlayerId | undefined): void;
+  )=> void;
+  onDiceChange: (newDice: Dice)=> void;
+  onPlayerPlayingChange: (playerId: PlayerId)=> void;
+  onPlayerWin: (playerId: PlayerId | undefined)=> void;
 };
 
 export function getAppApi(
   params: {
-    eventHandlers: AppEventHandler;
+    appEventHandlers: AppEventHandlers;
   }
 ): AppApi {
 
