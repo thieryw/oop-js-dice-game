@@ -63,7 +63,7 @@ export function getAppApi(
 
   return {
     "newGame": ()=>{
-
+      
       gameState= {
         "player0GlobalScore": 0,
         "player1GlobalScore": 0,
@@ -73,6 +73,8 @@ export function getAppApi(
         "playerPlaying": 0,
         "hasPlayerWon": false
       };
+
+      
 
       PlayerId.every.forEach(
         playerId=> (["CURRENT", "GLOBAL"] as const).forEach(
@@ -86,6 +88,7 @@ export function getAppApi(
         )
       );
 
+      
       appEventHandlers.onDiceChange(gameState.lastRolledDice);
 
       appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
@@ -97,6 +100,10 @@ export function getAppApi(
 
 
     "hold": ()=>{
+
+      if(gameState === null){
+        return;
+      }
 
       if( gameState.hasPlayerWon ){
         return;
@@ -175,6 +182,10 @@ export function getAppApi(
 
 
     "rollDice": ()=>{
+
+      if(gameState === null){
+        return;
+      }
 
       const lastRolledDice = ~~(Math.random() * 5 + 1) as Dice;
       

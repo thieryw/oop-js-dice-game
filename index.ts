@@ -5,15 +5,19 @@ import { getAppApi, AppEventHandlers, PlayerId } from "./appLogic";
 const rootElement= document.querySelector(".wrapper");
 
 const  { appEventHandlers } =(()=>{
-
+  
   const getPlayerPanel = (playerId: PlayerId) =>
-        this.htmlElement.querySelector(`.player-${playerId}-panel`);
+        document.querySelector(`.player-${playerId}-panel`);
 
   const appEventHandlers: AppEventHandlers ={
-    "onDiceChange": dice => 
+    "onDiceChange": dice => {
+        
         rootElement
           .querySelector(".dice")
-          .setAttribute("src", `//thieryw.github.io/oop-js-dice-game/docs/dice-${dice}.png`),
+          .setAttribute("src", `//thieryw.github.io/oop-js-dice-game/docs/dice-${dice}.png`);
+          
+    },
+      
     "onPlayerPlayingChange": playerId => {
             getPlayerPanel(playerId).classList.add("active");
             getPlayerPanel(PlayerId.otherPlayer(playerId)).classList.remove("active");
@@ -37,6 +41,16 @@ const  { appEventHandlers } =(()=>{
 
     },
     "onScoreChange": ({ playerId, scoreType, value})=> {
+      
+      console.log(playerId);
+      console.log(scoreType);
+
+      console.log(getPlayerPanel(playerId).querySelector(`#current-${playerId}`));
+     
+      /*getPlayerPanel(playerId).querySelector(
+        `#${scoreType.toLowerCase()}-${playerId}`).innerHTML = `${value}`;*/
+      //rootElement.querySelector
+      
       
 
     }
