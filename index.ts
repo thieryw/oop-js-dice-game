@@ -36,7 +36,7 @@ const  { appEventHandlers } =(()=>{
       getPlayerPanel(playerId).classList.add("winner");
 
     },
-    "onScoreChange": ({ playerId, scoreType})=> {
+    "onScoreChange": ({ playerId, scoreType, value})=> {
       
 
     }

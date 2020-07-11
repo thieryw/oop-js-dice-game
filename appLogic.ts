@@ -32,7 +32,7 @@ export type AppEventHandlers = {
     params: {
       playerId: PlayerId,
       scoreType: "GLOBAL" | "CURRENT";
-    
+      value: number;
     }
   )=> void;
   onDiceChange: (newDice: Dice)=> void;
@@ -49,6 +49,7 @@ type GameState = Readonly<{
   playerPlaying: PlayerId;
   hasPlayerWon: boolean;
 }>;
+
 
 export function getAppApi(
   params: {
@@ -71,21 +72,19 @@ export function getAppApi(
         "lastRolledDice": 1,
         "playerPlaying": 0,
         "hasPlayerWon": false
-
       };
 
-      for(const scoreType of ["CURRENT", "GLOBAL"]){
-        appEventHandlers.onScoreChange({
-          "playerId": 0,
-          "scoreType": scoreType as any
-        });
+      PlayerId.every.forEach(
+        playerId=> (["CURRENT", "GLOBAL"] as const).forEach(
+          scoreType=> 
+            appEventHandlers.onScoreChange({
+              playerId,
+              scoreType,
+              "value": 0
 
-        appEventHandlers.onScoreChange({
-          "playerId": 1,
-          "scoreType": scoreType as any
-          
-        });
-      }
+            })
+        )
+      );
 
       appEventHandlers.onDiceChange(gameState.lastRolledDice);
 
@@ -93,119 +92,163 @@ export function getAppApi(
 
       appEventHandlers.onPlayerWin(undefined);
 
-      
 
     },
 
 
     "hold": ()=>{
 
-      let newGlobaleScore = gameState[`player${gameState.playerPlaying}GlobalScore`] +
-                          gameState[`player${gameState.playerPlaying}CurrentScore`];
-      
-      let playerHasWon = newGlobaleScore >= 20 ? true : false;
-
-      const currentPlayerPlaying = gameState.playerPlaying;
-
-      let newPlayerPlaying = playerHasWon === true ? 
-      gameState.playerPlaying : PlayerId.otherPlayer(gameState.playerPlaying);
-
-    
-      let newGameState = {
-        "player0GlobalScore": newPlayerPlaying === 0 ? 
-                              gameState.player0GlobalScore : newGlobaleScore
-                              ,
-
-        "player1GlobalScore": newPlayerPlaying === 0 ?
-                              newGlobaleScore : gameState.player1GlobalScore
-                              ,
-        
-        "player0CurrentScore": 0,
-        "player1CurrentScore": 0,
-        "lastRolledDice": gameState.lastRolledDice,
-        "playerPlaying": newPlayerPlaying,
-        "hasPlayerWon": playerHasWon
-
-      }
-
-      gameState = newGameState;
-      
-      
-
-      for(const scoreType of ["CURRENT", "GLOBAL"]){
-        appEventHandlers.onScoreChange({
-          "playerId": currentPlayerPlaying,
-          "scoreType": `${scoreType}` as any
-        })
-      }
-
-      if(gameState[`player${gameState.playerPlaying}GlobalScore`] >= 20){
-        appEventHandlers.onPlayerWin(gameState.playerPlaying);
+      if( gameState.hasPlayerWon ){
         return;
       }
 
-      appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
+      const { newGameState } = (()=>{
+
+        const newGlobalScore = (()=>{
+          switch(gameState.playerPlaying){
+            case 0: return gameState.player0GlobalScore + gameState.player0CurrentScore;
+            case 1: return gameState.player1GlobalScore + gameState.player1CurrentScore
+          }
+        })();
+
+        const hasPlayerWon = newGlobalScore >= 20;
+
+        const newGameState: GameState = {
+          ...gameState,
+          [(()=>{
+            switch(gameState.playerPlaying){
+              case 0: return "player0GlobalScore";
+              case 1: return "player1GlobalScore";
+            }
+          })()]: newGlobalScore,
+          [(()=>{
+            switch(gameState.playerPlaying){
+              case 0: return "player0CurrentScore";
+              case 1: return "player1CurrentScore";
+            }
+          })()]: 0,
+          ...(hasPlayerWon?{}:{ "playerPlaying": PlayerId.otherPlayer(gameState.playerPlaying) }),
+          hasPlayerWon
+        };
+
+        return { newGameState };
+
+      })();
 
       
-    },
+      for(const scoreType of ["CURRENT", "GLOBAL"] as const){
+        appEventHandlers.onScoreChange({
+          "playerId": newGameState.playerPlaying,
+          "scoreType": scoreType,
+          "value": (()=>{
+            switch(scoreType){
+              case "CURRENT": return (()=>{
+                switch(newGameState.playerPlaying){
+                  case 0: return newGameState.player0CurrentScore;
+                  case 1: return newGameState.player1CurrentScore;
+                }
+              })();
+
+              case "GLOBAL": return (()=>{
+                switch(newGameState.playerPlaying){
+                  case 0: return newGameState.player0GlobalScore;
+                  case 0: return newGameState.player1GlobalScore;
+                }
+              })();
+            }
+          })()
+        })
+      }
+
+      block: {
+        if(newGameState.hasPlayerWon){
+          appEventHandlers.onPlayerWin(newGameState.playerPlaying);
+          break block;
+        }
+
+        appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
+      }
+
+      gameState = newGameState
+      
+      },
 
 
     "rollDice": ()=>{
+
+      const lastRolledDice = ~~(Math.random() * 5 + 1) as Dice;
       
-      let newDice = ~~(Math.random() * 5 + 1) as Dice;
-      
-      let newCurrentScore = gameState.lastRolledDice === 1 ? 
-                            0 : gameState[`player${gameState.playerPlaying}CurrentScore`] + newDice;
+      const { newGameState } = (()=>{
 
-
-      const currentPlayerPlaying = gameState.playerPlaying;
-      
-      let newPlayerPlaying = gameState.lastRolledDice === 1 ?
-                             PlayerId.otherPlayer(gameState.playerPlaying) : 
-                             gameState.playerPlaying;
-
-      
-
-     
-
-      let newGameState = {
-        "player0GlobalScore": gameState.player0GlobalScore,
-        "player1GlobalScore": gameState.player1GlobalScore,
-        "player0CurrentScore": newPlayerPlaying === 0 ?
-                               0 : newCurrentScore
-                              ,
         
-        "player1CurrentScore": newPlayerPlaying === 0 ?
-                               newCurrentScore : 0
-                               ,
+
+        const newCurrentScore = (()=>{
+          if(lastRolledDice === 1){
+            return 0;
+          }
+
+          switch(gameState.playerPlaying){
+            case 0: return gameState.player0CurrentScore + lastRolledDice;
+            case 1: return gameState.player1CurrentScore + lastRolledDice;
+          }
+        })()
         
-        "lastRolledDice": newDice,
-        "playerPlaying": newPlayerPlaying,
-        "hasPlayerWon": false
+        const newGameState: GameState = {
+          ...gameState,
+          lastRolledDice,
+          "playerPlaying": (()=>{
+            if(lastRolledDice === 1){
+              return PlayerId.otherPlayer(gameState.playerPlaying);
+            }
+
+            return gameState.playerPlaying;
+          })(),
+
+          [(()=>{
+            switch(gameState.playerPlaying){
+              case 0: return "player0CurrentScore";
+              case 1: return "player1CurrentScore";
+            }
+          })()]: newCurrentScore
+        };
+
+        return { newGameState }
+      })();
+      
+      appEventHandlers.onDiceChange(lastRolledDice);
+
+      block: {
+        if(gameState.lastRolledDice === 1){
+          appEventHandlers.onScoreChange({
+            "playerId": newGameState.playerPlaying,
+            "scoreType": "CURRENT",
+            "value": (()=>{
+              switch(newGameState.playerPlaying){
+                case 0: return 0;
+                case 1: return 0;
+              }
+            })()
+          })
+          appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
+
+          break block;
+        }
 
       }
 
-      gameState = newGameState;
-
-
-
-      appEventHandlers.onDiceChange(gameState.lastRolledDice);
-
-      if(gameState.lastRolledDice === 1){
-        appEventHandlers.onScoreChange({
-          "playerId": currentPlayerPlaying,
-          "scoreType": "CURRENT"
-        })
-        appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
-
-        return;
-      }
 
       appEventHandlers.onScoreChange({
         "playerId": gameState.playerPlaying,
-        "scoreType": "CURRENT"
+        "scoreType": "CURRENT",
+        "value": (()=>{
+          switch(gameState.playerPlaying){
+            case 0: return newGameState.player0CurrentScore;
+            case 1: return newGameState.player1CurrentScore;
+          }
+        })()
       })
 
+      gameState = newGameState;
 
 
     }
