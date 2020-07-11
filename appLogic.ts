@@ -32,6 +32,7 @@ export type AppEventHandlers = {
     params: {
       playerId: PlayerId,
       scoreType: "GLOBAL" | "CURRENT";
+    
     }
   )=> void;
   onDiceChange: (newDice: Dice)=> void;
@@ -75,13 +76,14 @@ export function getAppApi(
 
       for(const scoreType of ["CURRENT", "GLOBAL"]){
         appEventHandlers.onScoreChange({
-          "playerId": gameState.playerPlaying,
+          "playerId": 0,
           "scoreType": scoreType as any
         });
 
         appEventHandlers.onScoreChange({
-          "playerId": PlayerId.otherPlayer(gameState.playerPlaying),
+          "playerId": 1,
           "scoreType": scoreType as any
+          
         });
       }
 
@@ -102,6 +104,8 @@ export function getAppApi(
                           gameState[`player${gameState.playerPlaying}CurrentScore`];
       
       let playerHasWon = newGlobaleScore >= 20 ? true : false;
+
+      const currentPlayerPlaying = gameState.playerPlaying;
 
       let newPlayerPlaying = playerHasWon === true ? 
       gameState.playerPlaying : PlayerId.otherPlayer(gameState.playerPlaying);
@@ -130,7 +134,7 @@ export function getAppApi(
 
       for(const scoreType of ["CURRENT", "GLOBAL"]){
         appEventHandlers.onScoreChange({
-          "playerId": gameState.playerPlaying,
+          "playerId": currentPlayerPlaying,
           "scoreType": `${scoreType}` as any
         })
       }
@@ -152,6 +156,9 @@ export function getAppApi(
       
       let newCurrentScore = gameState.lastRolledDice === 1 ? 
                             0 : gameState[`player${gameState.playerPlaying}CurrentScore`] + newDice;
+
+
+      const currentPlayerPlaying = gameState.playerPlaying;
       
       let newPlayerPlaying = gameState.lastRolledDice === 1 ?
                              PlayerId.otherPlayer(gameState.playerPlaying) : 
@@ -169,7 +176,8 @@ export function getAppApi(
                               ,
         
         "player1CurrentScore": newPlayerPlaying === 0 ?
-                               newCurrentScore : 0,
+                               newCurrentScore : 0
+                               ,
         
         "lastRolledDice": newDice,
         "playerPlaying": newPlayerPlaying,
@@ -185,7 +193,7 @@ export function getAppApi(
 
       if(gameState.lastRolledDice === 1){
         appEventHandlers.onScoreChange({
-          "playerId": gameState.playerPlaying,
+          "playerId": currentPlayerPlaying,
           "scoreType": "CURRENT"
         })
         appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
