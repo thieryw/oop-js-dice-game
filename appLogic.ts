@@ -8,7 +8,7 @@ export type PlayerId= 0 | 1;
 export namespace PlayerId {
   
   export function otherPlayer(playerId: PlayerId): PlayerId{
-    switch(this.playerPlayingId){
+    switch(playerId){
       case 0: return 1;
       case 1: return 0;
     }
@@ -203,6 +203,8 @@ export function getAppApi(
             case 1: return gameState.player1CurrentScore + lastRolledDice;
           }
         })()
+
+        
         
         const newGameState: GameState = {
           ...gameState,
@@ -225,16 +227,24 @@ export function getAppApi(
 
         return { newGameState }
       })();
+
+    
       
       appEventHandlers.onDiceChange(lastRolledDice);
 
+      console.log(lastRolledDice);
+
       block: {
-        if(gameState.lastRolledDice === 1){
+
+
+        if(lastRolledDice === 1){
+
+    
           appEventHandlers.onScoreChange({
-            "playerId": newGameState.playerPlaying,
+            "playerId": gameState.playerPlaying,
             "scoreType": "CURRENT",
             "value": (()=>{
-              switch(newGameState.playerPlaying){
+              switch(gameState.playerPlaying){
                 case 0: return 0;
                 case 1: return 0;
               }
@@ -246,8 +256,8 @@ export function getAppApi(
         }
 
       }
-
-
+      
+      
       appEventHandlers.onScoreChange({
         "playerId": gameState.playerPlaying,
         "scoreType": "CURRENT",

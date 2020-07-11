@@ -42,14 +42,13 @@ const  { appEventHandlers } =(()=>{
     },
     "onScoreChange": ({ playerId, scoreType, value})=> {
       
-      console.log(playerId);
-      console.log(scoreType);
-
-      console.log(getPlayerPanel(playerId).querySelector(`#current-${playerId}`));
+     
+     /*console.log(getPlayerPanel(playerId).querySelector(
+        `#${scoreType.toLowerCase()}-${playerId}`));*/
      
       /*getPlayerPanel(playerId).querySelector(
         `#${scoreType.toLowerCase()}-${playerId}`).innerHTML = `${value}`;*/
-      //rootElement.querySelector
+      
       
       
 
