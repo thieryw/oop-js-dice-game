@@ -37,6 +37,7 @@ const  { appEventHandlers } =(()=>{
 
     },
     "onScoreChange": ({ playerId, scoreType})=> {
+      
 
     }
 
