@@ -10,14 +10,10 @@ const  { appEventHandlers } =(()=>{
         document.querySelector(`.player-${playerId}-panel`);
 
   const appEventHandlers: AppEventHandlers ={
-    "onDiceChange": dice => {
-        
+    "onDiceChange": dice => 
         rootElement
           .querySelector(".dice")
-          .setAttribute("src", `//thieryw.github.io/oop-js-dice-game/docs/dice-${dice}.png`);
-          
-    },
-      
+          .setAttribute("src", `//thieryw.github.io/oop-js-dice-game/docs/dice-${dice}.png`),
     "onPlayerPlayingChange": playerId => {
             getPlayerPanel(playerId).classList.add("active");
             getPlayerPanel(PlayerId.otherPlayer(playerId)).classList.remove("active");
@@ -27,7 +23,7 @@ const  { appEventHandlers } =(()=>{
       if( playerId === undefined ){
 
           PlayerId.every.forEach(playerId=>{
-            getPlayerPanel(playerId).innerHTML = `Player ${playerId +1}`;
+            getPlayerPanel(playerId).querySelector(".player-name").innerHTML = `Player ${playerId +1}`;
             getPlayerPanel(playerId).classList.remove("winner");
           });
 
@@ -46,8 +42,8 @@ const  { appEventHandlers } =(()=>{
      /*console.log(getPlayerPanel(playerId).querySelector(
         `#${scoreType.toLowerCase()}-${playerId}`));*/
      
-      /*getPlayerPanel(playerId).querySelector(
-        `#${scoreType.toLowerCase()}-${playerId}`).innerHTML = `${value}`;*/
+      getPlayerPanel(playerId).querySelector(
+        `#${scoreType.toLowerCase()}-${playerId}`).innerHTML = `${value}`;
       
       
       

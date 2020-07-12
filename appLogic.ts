@@ -1,6 +1,3 @@
-import { asPostable } from "evt/lib/Evt.asPostable";
-
-
 export type Dice = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type PlayerId= 0 | 1;
@@ -61,7 +58,7 @@ export function getAppApi(
 
   let gameState: GameState= null as any;
 
-  return {
+  const appApi: AppApi=  {
     "newGame": ()=>{
       
       gameState= {
@@ -73,8 +70,6 @@ export function getAppApi(
         "playerPlaying": 0,
         "hasPlayerWon": false
       };
-
-      
 
       PlayerId.every.forEach(
         playerId=> (["CURRENT", "GLOBAL"] as const).forEach(
@@ -97,13 +92,7 @@ export function getAppApi(
 
 
     },
-
-
     "hold": ()=>{
-
-      if(gameState === null){
-        return;
-      }
 
       if( gameState.hasPlayerWon ){
         return;
@@ -145,21 +134,21 @@ export function getAppApi(
       
       for(const scoreType of ["CURRENT", "GLOBAL"] as const){
         appEventHandlers.onScoreChange({
-          "playerId": newGameState.playerPlaying,
-          "scoreType": scoreType,
+          "playerId": gameState.playerPlaying,
+          scoreType,
           "value": (()=>{
             switch(scoreType){
               case "CURRENT": return (()=>{
-                switch(newGameState.playerPlaying){
+                switch(gameState.playerPlaying){
                   case 0: return newGameState.player0CurrentScore;
                   case 1: return newGameState.player1CurrentScore;
                 }
               })();
 
               case "GLOBAL": return (()=>{
-                switch(newGameState.playerPlaying){
+                switch(gameState.playerPlaying){
                   case 0: return newGameState.player0GlobalScore;
-                  case 0: return newGameState.player1GlobalScore;
+                  case 1: return newGameState.player1GlobalScore;
                 }
               })();
             }
@@ -173,17 +162,18 @@ export function getAppApi(
           break block;
         }
 
-        appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
+        appEventHandlers.onPlayerPlayingChange(newGameState.playerPlaying);
       }
 
       gameState = newGameState
+
       
       },
 
 
     "rollDice": ()=>{
 
-      if(gameState === null){
+      if(gameState.hasPlayerWon){
         return;
       }
 
@@ -232,8 +222,6 @@ export function getAppApi(
       
       appEventHandlers.onDiceChange(lastRolledDice);
 
-      console.log(lastRolledDice);
-
       block: {
 
 
@@ -250,7 +238,7 @@ export function getAppApi(
               }
             })()
           })
-          appEventHandlers.onPlayerPlayingChange(gameState.playerPlaying);
+          appEventHandlers.onPlayerPlayingChange(newGameState.playerPlaying);
 
           break block;
         }
@@ -273,7 +261,11 @@ export function getAppApi(
 
 
     }
-  }
+  };
+
+  appApi.newGame();
+
+  return appApi;
 
 }
 
