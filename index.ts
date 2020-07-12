@@ -36,18 +36,11 @@ const  { appEventHandlers } =(()=>{
       getPlayerPanel(playerId).classList.add("winner");
 
     },
-    "onScoreChange": ({ playerId, scoreType, value})=> {
-      
-     
-     /*console.log(getPlayerPanel(playerId).querySelector(
-        `#${scoreType.toLowerCase()}-${playerId}`));*/
+    "onScoreChange": ({ playerId, scoreType, value}) => {
      
       getPlayerPanel(playerId).querySelector(
         `#${scoreType.toLowerCase()}-${playerId}`).innerHTML = `${value}`;
       
-      
-      
-
     }
 
   };

@@ -144,7 +144,6 @@ export function getAppApi(
                   case 1: return newGameState.player1CurrentScore;
                 }
               })();
-
               case "GLOBAL": return (()=>{
                 switch(gameState.playerPlaying){
                   case 0: return newGameState.player0GlobalScore;
@@ -177,12 +176,12 @@ export function getAppApi(
         return;
       }
 
-      const lastRolledDice = ~~(Math.random() * 5 + 1) as Dice;
       
       const { newGameState } = (()=>{
 
-        
 
+        const lastRolledDice = ~~(Math.random() * 5 + 1) as Dice;
+        
         const newCurrentScore = (()=>{
           if(lastRolledDice === 1){
             return 0;
@@ -199,14 +198,11 @@ export function getAppApi(
         const newGameState: GameState = {
           ...gameState,
           lastRolledDice,
-          "playerPlaying": (()=>{
-            if(lastRolledDice === 1){
-              return PlayerId.otherPlayer(gameState.playerPlaying);
-            }
-
-            return gameState.playerPlaying;
-          })(),
-
+          ...(
+            lastRolledDice === 1 ? 
+              { "playerPlaying": PlayerId.otherPlayer(gameState.playerPlaying) }: 
+              {}
+          ),
           [(()=>{
             switch(gameState.playerPlaying){
               case 0: return "player0CurrentScore";
@@ -220,27 +216,21 @@ export function getAppApi(
 
     
       
-      appEventHandlers.onDiceChange(lastRolledDice);
+      appEventHandlers.onDiceChange(newGameState.lastRolledDice);
 
-      block: {
+      walk: {
 
-
-        if(lastRolledDice === 1){
-
+        if(newGameState.lastRolledDice === 1){
     
           appEventHandlers.onScoreChange({
             "playerId": gameState.playerPlaying,
             "scoreType": "CURRENT",
-            "value": (()=>{
-              switch(gameState.playerPlaying){
-                case 0: return 0;
-                case 1: return 0;
-              }
-            })()
+            "value": 0
           })
           appEventHandlers.onPlayerPlayingChange(newGameState.playerPlaying);
 
-          break block;
+          break walk;
+          
         }
 
       }
